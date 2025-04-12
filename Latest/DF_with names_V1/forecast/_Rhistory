@@ -1,0 +1,2 @@
+library(shiny); runApp('C:/Users/vamsi.sunku/Desktop/sai.R')
+runApp('C:/Users/vamsi.sunku/Desktop/sai.R')
