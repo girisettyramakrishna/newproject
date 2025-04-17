@@ -1,0 +1,46 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'windows-latest'  # Can be switched to 'ubuntu-latest' if using Linux-friendly R
+
+variables:
+  R_VERSION: '4.4.3'
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      addToPath: true
+
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '6.x.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - powershell: |
+      choco install r.project --version=$(R_VERSION) -y
+      choco install rtools -y
+    displayName: 'Install R and RTools (for Windows)'
+
+  - task: CmdLine@2
+    displayName: 'Install R Packages'
+    inputs:
+      script: |
+        Rscript -e "install.packages(c('shiny', 'rsconnect', 'DMwR2', 'dplyr', 'ggplot2'), repos='https://cloud.r-project.org')"
+
+  - task: CmdLine@2
+    displayName: 'Set rsconnect Account Info'
+    inputs:
+      script: |
+        Rscript -e "rsconnect::setAccountInfo(name='azureprojects', token='3832F9C45AB51F3C040290B25DF5B9B1', secret='CReAj/bJzXTOetpf4akJt9NKJK9Dzs6jZ/nPVqA8')"
+
+  - task: CmdLine@2
+    displayName: 'Deploy App to Shinyapps.io'
+    inputs:
+      script: |
+        Rscript -e "rsconnect::deployApp(appDir = 'C:/Users/admin/source/repos/demand Forecasting', appPrimaryDoc = 'app.R', account = 'azureprojects')"
+
