@@ -42,5 +42,5 @@ steps:
     displayName: 'Deploy App to Shinyapps.io'
     inputs:
       script: |
-        Rscript -e "rsconnect::deployApp(appDir = 'C:/Users/admin/source/repos/demand Forecasting', appPrimaryDoc = 'app.R', account = 'azureprojects')"
+        Rscript -e "rsconnect::deployApp(appDir = 'C:/Users/admin/source/repos/demand Forecasting', appPrimaryDoc = 'DF_app.R', account = 'azureprojects')"
 
