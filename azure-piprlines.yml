@@ -1,37 +1,24 @@
 trigger:
-  - main  # or your default branch
+- main
 
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-  CRAN: 'https://cloud.r-project.org'
-
 steps:
-  # Step 1: Install R
-  - task: UsePythonVersion@0  # Needed for rsconnect's dependencies
-    inputs:
-      versionSpec: '3.x'
-  - bash: |
-      sudo apt update
-      sudo apt install -y libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev
-      sudo apt install -y r-base
-      R --version
-    displayName: 'Install R'
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
 
-  # Step 2: Install R packages
-  - bash: |
-      Rscript -e "install.packages(c('shiny', 'forecast', 'rsconnect'), repos='${CRAN}')"
-    displayName: 'Install R packages'
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+    sudo apt-get install -y r-base
+    Rscript -e 'install.packages("rsconnect", repos="https://cloud.r-project.org")'
+    Rscript -e 'rsconnect::setAccountInfo(name=Sys.getenv("ramkiapps"), token=Sys.getenv("94A259A8B02489BAFC5E2CE3442D164C"), secret=Sys.getenv("0rZk4dmGFbNu8EZlcbdCNqt6SG0axN/TdUt0sMTK"))'
+    Rscript -e 'rsconnect::deployApp(appDir = "C:/Users/admin/source/repos/demand Forecasting", appName = "my-shiny-app", account = Sys.getenv("SHINYAPPS_ACCOUNT"))'
+  displayName: 'Deploy to shinyapps.io'
+  env:
+    SHINYAPPS_ACCOUNT: $(ramkiapps)
+    SHINYAPPS_TOKEN: $(94A259A8B02489BAFC5E2CE3442D164C)
+    SHINYAPPS_SECRET: $(0rZk4dmGFbNu8EZlcbdCNqt6SG0axN/TdUt0sMTK)
 
-  # Step 3: Run Forecast Script (e.g., test model)
-  - bash: |
-      Rscript forecast.R  # or any test/build script
-    displayName: 'Run Forecast'
-
-  # Step 4: Deploy to shinyapps.io
-  - bash: |
-      echo 'Setting up rsconnect account...'
-      Rscript -e "rsconnect::setAccountInfo(name='azureprojects', token='$()', secret='$(SHINYAPPS_SECRET)')"
-      Rscript -e "rsconnect::deployApp(appDir = '.', appName = 'your-app-name', account = 'yourname')"
-    displayName: 'Deploy to shinyapps.io'
