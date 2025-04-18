@@ -1,46 +1,37 @@
 trigger:
-  branches:
-    include:
-      - main
+  - main  # or your default branch
 
 pool:
-  vmImage: 'windows-latest'  # Can be switched to 'ubuntu-latest' if using Linux-friendly R
+  vmImage: 'ubuntu-latest'
 
 variables:
-  R_VERSION: '4.4.3'
+  CRAN: 'https://cloud.r-project.org'
 
 steps:
-  - task: UsePythonVersion@0
+  # Step 1: Install R
+  - task: UsePythonVersion@0  # Needed for rsconnect's dependencies
     inputs:
       versionSpec: '3.x'
-      addToPath: true
+  - bash: |
+      sudo apt update
+      sudo apt install -y libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev
+      sudo apt install -y r-base
+      R --version
+    displayName: 'Install R'
 
-  - task: UseDotNet@2
-    inputs:
-      packageType: 'sdk'
-      version: '6.x.x'
-      installationPath: $(Agent.ToolsDirectory)/dotnet
+  # Step 2: Install R packages
+  - bash: |
+      Rscript -e "install.packages(c('shiny', 'forecast', 'rsconnect'), repos='${CRAN}')"
+    displayName: 'Install R packages'
 
-  - powershell: |
-      choco install r.project --version=$(R_VERSION) -y
-      choco install rtools -y
-    displayName: 'Install R and RTools (for Windows)'
+  # Step 3: Run Forecast Script (e.g., test model)
+  - bash: |
+      Rscript forecast.R  # or any test/build script
+    displayName: 'Run Forecast'
 
-  - task: CmdLine@2
-    displayName: 'Install R Packages'
-    inputs:
-      script: |
-        Rscript -e "install.packages(c('shiny', 'rsconnect', 'DMwR2', 'dplyr', 'ggplot2'), repos='https://cloud.r-project.org')"
-
-  - task: CmdLine@2
-    displayName: 'Set rsconnect Account Info'
-    inputs:
-      script: |
-        Rscript -e "rsconnect::setAccountInfo(name='azureprojects', token='3832F9C45AB51F3C040290B25DF5B9B1', secret='CReAj/bJzXTOetpf4akJt9NKJK9Dzs6jZ/nPVqA8')"
-
-  - task: CmdLine@2
-    displayName: 'Deploy App to Shinyapps.io'
-    inputs:
-      script: |
-        Rscript -e "rsconnect::deployApp(appDir = 'C:/Users/admin/source/repos/demand Forecasting', appPrimaryDoc = 'DF_app.R', account = 'azureprojects')"
-
+  # Step 4: Deploy to shinyapps.io
+  - bash: |
+      echo 'Setting up rsconnect account...'
+      Rscript -e "rsconnect::setAccountInfo(name='azureprojects', token='$()', secret='$(SHINYAPPS_SECRET)')"
+      Rscript -e "rsconnect::deployApp(appDir = '.', appName = 'your-app-name', account = 'yourname')"
+    displayName: 'Deploy to shinyapps.io'
