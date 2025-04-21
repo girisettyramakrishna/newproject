@@ -1,25 +1,43 @@
 trigger:
-  branches:
-    include:
-      - main
+- main
+
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  R_LIBS_USER: '~/R/x86_64-pc-linux-gnu-library/4.1'
+
 steps:
+
+# Step 1: Install R
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'
-
 - script: |
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys '51716619E084DAB9'
+    sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
     sudo apt-get update
-    sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
     sudo apt-get install -y r-base
-    Rscript -e 'install.packages("rsconnect", repos="https://cloud.r-project.org")'
-    Rscript -e 'rsconnect::setAccountInfo(name=Sys.getenv("ramkiapps"), token=Sys.getenv("94A259A8B02489BAFC5E2CE3442D164C"), secret=Sys.getenv("0rZk4dmGFbNu8EZlcbdCNqt6SG0axN/TdUt0sMTK"))'
-    Rscript -e 'rsconnect::deployApp(appDir = "C:/Users/admin/source/repos/demand Forecasting", appName = "my-shiny-app", account = Sys.getenv("SHINYAPPS_ACCOUNT"))'
-  displayName: 'Deploy to shinyapps.io'
-  env:
-    SHINYAPPS_ACCOUNT: $(ramkiapps)
-    SHINYAPPS_TOKEN: $(94A259A8B02489BAFC5E2CE3442D164C)
-    SHINYAPPS_SECRET: $(0rZk4dmGFbNu8EZlcbdCNqt6SG0axN/TdUt0sMTK)
+  displayName: 'Install R'
+
+# Step 2: Install required R packages
+- script: |
+    Rscript -e "install.packages(c('shiny', 'rsconnect', 'lintr'), repos='https://cloud.r-project.org')"
+  displayName: 'Install R Packages'
+
+# Step 3: Linting / Code Scan
+- script: |
+    Rscript -e "lintr::lint_dir('.')"
+  displayName: 'Run lintr scan'
+
+# Step 4: Run your R script (optional)
+- script: |
+    Rscript app.R
+  displayName: 'Build/Run R App'
+
+# Step 5: Deploy to shinyapps.io
+- script: |
+    Rscript -e "rsconnect::setAccountInfo(name='ramkiapps', token='94A259A8B02489BAFC5E2CE3442D164C', secret='0rZk4dmGFbNu8EZlcbdCNqt6SG0axN/TdUt0sMTK')"
+    Rscript -e "rsconnect::deployApp('C:/Users/admin/source/repos/Demand Forecasting', appName='demand-forecasting')"
+  displayName: 'Deploy to shinyapps.io' 
 
