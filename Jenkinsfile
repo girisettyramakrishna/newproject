@@ -2,9 +2,14 @@ pipeline {
     agent any
 
     environment {
-        R_HOME = '/usr/local/lib/R'  // Adjust if your R is in a different location
+        R_HOME = '/usr/local/lib/R'  // Adjust if needed
         PATH = "${env.PATH}:${R_HOME}/bin"
         R_ENVIRON_USER = "${WORKSPACE}/.Renviron"
+
+        // These should match Jenkins credentials (secret text or environment variables)
+        SHINYAPPS_NAME = credentials('shinyapps_name')
+        SHINYAPPS_TOKEN = credentials('shinyapps_token')
+        SHINYAPPS_SECRET = credentials('shinyapps_secret')
     }
 
     stages {
@@ -25,12 +30,14 @@ pipeline {
         stage('Deploy to shinyapps.io') {
             steps {
                 sh '''
-                Rscript -e '
-                    rsconnect::setAccountInfo(name = Sys.getenv("psmlabs"),
-                                              token = Sys.getenv("8FAB74BDBB46C9CA05D75B7102711773"),
-                                              secret = Sys.getenv("9a6AwJZn3QacJOlVCdzWv6Ptj34mOsuIRE3OuNDI"))
-                    rsconnect::deployApp(".", appName = "demandforecasting", account = Sys.getenv("psmlabs"))
-                '
+                Rscript -e "
+                    rsconnect::setAccountInfo(
+                        name='${SHINYAPPS_NAME}',
+                        token='${SHINYAPPS_TOKEN}',
+                        secret='${SHINYAPPS_SECRET}'
+                    )
+                    rsconnect::deployApp('.', appName='demandforecasting', account='${SHINYAPPS_NAME}')
+                "
                 '''
             }
         }
