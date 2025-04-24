@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    environment {
+        GIT_REPO = 'https://github.com/your-username/DF_v1.git'
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git "${GIT_REPO}"
+            }
+        }
+
+        stage('Install R Packages (Optional)') {
+            steps {
+                sh '''
+                Rscript -e "if (!require('rsconnect')) install.packages('rsconnect', repos='https://cloud.r-project.org')"
+                '''
+            }
+        }
+
+        stage('Deploy to shinyapps.io') {
+            steps {
+                sh 'Rscript deploy.R'
+            }
+        }
+    }
+}
+
