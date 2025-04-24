@@ -2,14 +2,10 @@ pipeline {
     agent any
 
     environment {
-        R_HOME = '/usr/local/lib/R'  // Adjust if needed
-        PATH = "${env.PATH}:${R_HOME}/bin"
-        R_ENVIRON_USER = "${WORKSPACE}/.Renviron"
-
-        // These should match Jenkins credentials (secret text or environment variables)
-        SHINYAPPS_NAME = credentials('shinyapps_name')
-        SHINYAPPS_TOKEN = credentials('shinyapps_token')
-        SHINYAPPS_SECRET = credentials('shinyapps_secret')
+        R_HOME = '/usr/local/lib/R'                     // Adjust if your R is in a different location
+        PATH = "${env.PATH}:${R_HOME}/bin"             // Make R available in PATH
+        R_LIBS_USER = "${env.HOME}/Rlibs"              // Use user-writable library
+        R_ENVIRON_USER = "${WORKSPACE}/.Renviron"      // Optional .Renviron if needed
     }
 
     stages {
@@ -22,22 +18,28 @@ pipeline {
         stage('Install R Packages') {
             steps {
                 sh '''
+                mkdir -p "$R_LIBS_USER"
                 Rscript -e 'install.packages(c("rsconnect", "shiny", "ggplot2", "dplyr"), repos="https://cloud.r-project.org")'
                 '''
             }
         }
 
         stage('Deploy to shinyapps.io') {
+            environment {
+                SHINYAPPS_NAME = credentials('SHINYAPPS_NAME')     // Jenkins string credential (e.g., psmlabs)
+                SHINYAPPS_TOKEN = credentials('SHINYAPPS_TOKEN')   // Jenkins secret text credential
+                SHINYAPPS_SECRET = credentials('SHINYAPPS_SECRET') // Jenkins secret text credential
+            }
             steps {
                 sh '''
-                Rscript -e "
+                Rscript -e '
                     rsconnect::setAccountInfo(
-                        name='${SHINYAPPS_NAME}',
-                        token='${SHINYAPPS_TOKEN}',
-                        secret='${SHINYAPPS_SECRET}'
+                        name = Sys.getenv("SHINYAPPS_NAME"),
+                        token = Sys.getenv("SHINYAPPS_TOKEN"),
+                        secret = Sys.getenv("SHINYAPPS_SECRET")
                     )
-                    rsconnect::deployApp('.', appName='demandforecasting', account='${SHINYAPPS_NAME}')
-                "
+                    rsconnect::deployApp(".", appName = "demandforecasting", account = Sys.getenv("SHINYAPPS_NAME"))
+                '
                 '''
             }
         }
