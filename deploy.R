@@ -5,11 +5,7 @@ rsconnect::setAccountInfo(name='psmlabs',
                           secret='9a6AwJZn3QacJOlVCdzWv6Ptj34mOsuIRE3OuNDI')
 
 # Assuming app is in repo root
-rsconnect::deployApp('.', appName = "DF_v1")
-
-
-
-
+rsconnect::deployApp('.', account = "psmlabs", appName = "DF_v1",forceUpdate = TRUE)
 
 
 
