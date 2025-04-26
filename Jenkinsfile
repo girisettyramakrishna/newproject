@@ -2,29 +2,24 @@ pipeline {
     agent any
 
     environment {
-        GIT_REPO = 'https://github.com/girisettyramakrishna/newproject.git'
+        REMOTE_USER = 'deployuser'
+        REMOTE_HOST = '54.227.205.64'
+        REMOTE_DIR  = '/opt/shinyapps/DF_v1'
     }
 
     stages {
         stage('Clone Repo') {
             steps {
-                git "${GIT_REPO}"
+                git 'https://github.com/your-username/DF_v1.git'
             }
         }
 
-        stage('Install R Packages (Optional)') {
+        stage('Copy Files to Deployment Server') {
             steps {
                 sh '''
-                Rscript -e "if (!require('rsconnect')) install.packages('rsconnect', repos='https://cloud.r-project.org')"
+                scp -r . ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}
                 '''
-            }
-        }
-
-        stage('Deploy to shinyapps.io') {
-            steps {
-                sh 'Rscript deploy.R'
             }
         }
     }
 }
-
